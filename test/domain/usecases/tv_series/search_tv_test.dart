@@ -4,7 +4,8 @@ import 'package:ditonton/domain/usecases/tv_series/search_tv.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 
-import '../../../helpers/test_helper_tv.mocks.dart';
+import '../../../helpers/test_helper.mocks.dart';
+
 
 void main() {
   late SearchTv usecase;

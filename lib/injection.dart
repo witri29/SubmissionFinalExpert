@@ -1,3 +1,4 @@
+import 'package:ditonton/common/ssl_helper.dart';
 import 'package:ditonton/data/datasources/db/database_helper.dart';
 import 'package:ditonton/data/datasources/db/database_helper_tv.dart';
 import 'package:ditonton/data/datasources/movie_local_data_source.dart';
@@ -28,109 +29,41 @@ import 'package:ditonton/domain/usecases/tv_series/get_watchlist_tv.dart';
 import 'package:ditonton/domain/usecases/tv_series/remove_watchlist.dart';
 import 'package:ditonton/domain/usecases/tv_series/save_watchlist_tv.dart';
 import 'package:ditonton/domain/usecases/tv_series/search_tv.dart';
-import 'package:ditonton/presentation/provider/movie_detail_notifier.dart';
-import 'package:ditonton/presentation/provider/movie_list_notifier.dart';
-import 'package:ditonton/presentation/provider/movie_now_playing_notifier.dart';
-import 'package:ditonton/presentation/provider/movie_search_notifier.dart';
-import 'package:ditonton/presentation/provider/popular_movies_notifier.dart';
-import 'package:ditonton/presentation/provider/top_rated_movies_notifier.dart';
-import 'package:ditonton/presentation/provider/tv_series/popular_tv_notifier.dart';
-import 'package:ditonton/presentation/provider/tv_series/top_rated_tv_notifier.dart';
-import 'package:ditonton/presentation/provider/tv_series/tv_detail_notifier.dart';
-import 'package:ditonton/presentation/provider/tv_series/tv_list_notifier.dart';
-import 'package:ditonton/presentation/provider/tv_series/tv_now_playing_notifier.dart';
-import 'package:ditonton/presentation/provider/tv_series/tv_search_notifier.dart';
-import 'package:ditonton/presentation/provider/tv_series/watchlist_tv_notifier.dart';
-import 'package:ditonton/presentation/provider/watchlist_movie_notifier.dart';
+import 'package:ditonton/presentation/provider/bloc_tv_series/tv_bloc.dart';
+import 'package:ditonton/presentation/provider/movie_bloc.dart';
+import 'package:ditonton/presentation/provider/search_bloc.dart';
 import 'package:http/http.dart' as http;
 import 'package:get_it/get_it.dart';
 
 final locator = GetIt.instance;
 
 void init() {
-  // provider
-  locator.registerFactory(
-    () => MovieListNotifier(
-      getNowPlayingMovies: locator(),
-      getPopularMovies: locator(),
-      getTopRatedMovies: locator(),
-    ),
-  );
-  locator.registerFactory(
-    () => MovieDetailNotifier(
-      getMovieDetail: locator(),
-      getMovieRecommendations: locator(),
-      getWatchListStatus: locator(),
-      saveWatchlist: locator(),
-      removeWatchlist: locator(),
-    ),
-  );
-  locator.registerFactory(
-    () => MovieSearchNotifier(
-      searchMovies: locator(),
-    ),
-  );
-  locator.registerFactory(
-    () => PopularMoviesNotifier(
-      locator(),
-    ),
-  );
-  locator.registerFactory(
-    () => NowPlayingMoviesNotifier(
-      locator(),
-    ),
-  );
-  locator.registerFactory(
-    () => TopRatedMoviesNotifier(
-      getTopRatedMovies: locator(),
-    ),
-  );
-  locator.registerFactory(
-    () => WatchlistMovieNotifier(
-      getWatchlistMovies: locator(),
-    ),
-  );
-  locator.registerFactory(
-        () => TvListNotifier(
-      getNowPlayingTv: locator(),
-      getPopularTv: locator(),
-      getTopRatedTv: locator(),
-    ),
-  );
-  locator.registerFactory(
-        () => TvDetailNotifier(
-      getTvDetail: locator(),
-      getTvRecommendations: locator(),
-      getWatchListStatusTv: locator(),
-      saveWatchlistTv: locator(),
-      removeWatchlistTv: locator(),
-    ),
-  );
-  locator.registerFactory(
-        () => TvSearchNotifier(
-      searchTv: locator(),
-    ),
-  );
-  locator.registerFactory(
-        () => PopularTvNotifier(
-      locator(),
-    ),
-  );
-  locator.registerFactory(
-        () => NowPlayingTvNotifier(
-      locator(),
-    ),
-  );
-  locator.registerFactory(
-        () => TopRatedTvNotifier(
-      getTopRatedTv: locator(),
-    ),
-  );
-  locator.registerFactory(
-        () => WatchlistTvNotifier(
-      getWatchlistTv: locator(),
-    ),
-  );
+  // bloc
+  locator.registerFactory(() => SearchMoviesBloc(locator()));
+  locator.registerFactory(() => NowPlayingMoviesBloc(locator()));
+  locator.registerFactory(() => PopularMoviesBloc(locator()));
+  locator.registerFactory(() => TopRatedMoviesBloc(locator()));
+  locator.registerFactory(() => DetailMovieBloc(locator()));
+  locator.registerFactory(() => RecommendationMovieBloc(locator()));
+  locator.registerFactory(() => WatchListBloc(
+        locator(),
+        locator(),
+        locator(),
+        locator(),
+      ));
+
+  locator.registerFactory(() => TvNowPlayingBloc(locator()));
+  locator.registerFactory(() => SearchTvBloc(locator()));
+  locator.registerFactory(() => PopularTvBloc(locator()));
+  locator.registerFactory(() => TopRatedTvBloc(locator()));
+  locator.registerFactory(() => TvDetailBloc(locator()));
+  locator.registerFactory(() => RecommendationsTvBloc(locator()));
+  locator.registerFactory(() => WatchlistTvBloc(
+        locator(),
+        locator(),
+        locator(),
+        locator(),
+      ));
 
   // use case
   locator.registerLazySingleton(() => GetNowPlayingMovies(locator()));
@@ -164,7 +97,7 @@ void init() {
   );
 
   locator.registerLazySingleton<TvRepository>(
-        () => TvRepositoryImpl(
+    () => TvRepositoryImpl(
       remoteDataSource: locator(),
       localDataSourceTv: locator(),
     ),
@@ -177,9 +110,9 @@ void init() {
       () => MovieLocalDataSourceImpl(databaseHelper: locator()));
 
   locator.registerLazySingleton<TvLocalDataSource>(
-          () => TvLocalDataSourceImpl(databaseHelper: locator()));
+      () => TvLocalDataSourceImpl(databaseHelper: locator()));
   locator.registerLazySingleton<TvRemoteDataSource>(
-          () => TvRemoteDataSourceImpl(client: locator()));
+      () => TvRemoteDataSourceImpl(client: locator()));
 
   // helper
   locator.registerLazySingleton<DatabaseHelper>(() => DatabaseHelper());
@@ -187,5 +120,6 @@ void init() {
   locator.registerLazySingleton<DatabaseHelperTv>(() => DatabaseHelperTv());
 
   // external
-  locator.registerLazySingleton(() => http.Client());
+  locator.registerLazySingleton(() => http.Client);
+  locator.registerLazySingleton(() => SSLHelper.client);
 }

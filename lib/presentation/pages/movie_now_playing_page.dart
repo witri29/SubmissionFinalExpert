@@ -1,8 +1,7 @@
-import 'package:ditonton/common/state_enum.dart';
-import 'package:ditonton/presentation/provider/movie_now_playing_notifier.dart';
+import 'package:ditonton/presentation/provider/movie_bloc.dart';
 import 'package:ditonton/presentation/widgets/movie_card_list.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 class NowPlayingMoviesPage extends StatefulWidget {
   static const ROUTE_NAME = '/now_playing-movie';
@@ -15,9 +14,8 @@ class _NowPlayingMoviesPageState extends State<NowPlayingMoviesPage> {
   @override
   void initState() {
     super.initState();
-    Future.microtask(() =>
-        Provider.of<NowPlayingMoviesNotifier>(context, listen: false)
-            .fetchNowPlayingMovies());
+    Future.microtask(
+        () => context.read<NowPlayingMoviesBloc>().add(FetchNowPlayingMovies()));
   }
 
   @override
@@ -28,28 +26,29 @@ class _NowPlayingMoviesPageState extends State<NowPlayingMoviesPage> {
       ),
       body: Padding(
         padding: const EdgeInsets.all(8.0),
-        child: Consumer<NowPlayingMoviesNotifier>(
-          builder: (context, data, child) {
-            if (data.state == RequestState.Loading) {
-              return Center(
-                child: CircularProgressIndicator(),
-              );
-            } else if (data.state == RequestState.Loaded) {
-              return ListView.builder(
-                itemBuilder: (context, index) {
-                  final movie = data.movies[index];
-                  return MovieCard(movie);
-                },
-                itemCount: data.movies.length,
-              );
-            } else {
-              return Center(
-                key: Key('error_message'),
-                child: Text(data.message),
-              );
-            }
-          },
-        ),
+        child: BlocBuilder<NowPlayingMoviesBloc, MovieBlocState>(
+            builder: (context, state) {
+          if (state is MoviesLoading) {
+            return const Center(
+              child: CircularProgressIndicator(),
+            );
+          } else if (state is MoviesHasData) {
+            return ListView.builder(
+              itemBuilder: (context, index) {
+                final movie = state.movies[index];
+                return MovieCard(movie);
+              },
+              itemCount: state.movies.length,
+            );
+          } else if (state is MoviesHasError) {
+            return Center(
+              key: const Key('error_message'),
+              child: Text(state.message),
+            );
+          } else {
+            return Text('Data is empty');
+          }
+        }),
       ),
     );
   }
