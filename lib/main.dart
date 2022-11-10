@@ -1,6 +1,7 @@
 import 'package:ditonton/common/constants.dart';
 import 'package:ditonton/common/ssl_helper.dart';
 import 'package:ditonton/common/utils.dart';
+import 'package:ditonton/firebase_options.dart';
 import 'package:ditonton/presentation/pages/about_page.dart';
 import 'package:ditonton/presentation/pages/movie_detail_page.dart';
 import 'package:ditonton/presentation/pages/home_movie_page.dart';
@@ -19,6 +20,7 @@ import 'package:ditonton/presentation/pages/watchlist_movies_page.dart';
 import 'package:ditonton/presentation/provider/bloc_tv_series/tv_bloc.dart';
 import 'package:ditonton/presentation/provider/movie_bloc.dart';
 import 'package:ditonton/presentation/provider/search_bloc.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -27,6 +29,8 @@ import 'package:ditonton/injection.dart' as di;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
   await SSLHelper.initializing();
   di.init();
   runApp(MyApp());
@@ -44,7 +48,6 @@ class MyApp extends StatelessWidget {
         BlocProvider(create: (_) => di.locator<DetailMovieBloc>()),
         BlocProvider(create: (_) => di.locator<RecommendationMovieBloc>()),
         BlocProvider(create: (_) => di.locator<WatchListBloc>()),
-
         BlocProvider(create: (_) => di.locator<PopularTvBloc>()),
         BlocProvider(create: (_) => di.locator<TopRatedTvBloc>()),
         BlocProvider(create: (_) => di.locator<TvNowPlayingBloc>()),
@@ -85,7 +88,7 @@ class MyApp extends StatelessWidget {
               return MaterialPageRoute(builder: (_) => WatchlistMoviesPage());
             case AboutPage.ROUTE_NAME:
               return MaterialPageRoute(builder: (_) => AboutPage());
-              
+
             case TvHomePage.ROUTE_NAME:
               return MaterialPageRoute(builder: (_) => TvHomePage());
             case PopularTvPage.ROUTE_NAME:
